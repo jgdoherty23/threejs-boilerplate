@@ -1,14 +1,18 @@
 console.log("debug: main");
 
-// FPS
+var stats;
+var showStatsPanel = true;
+
 var clock;
 var deltaTime;
 
-// Scene
 var container;
 var renderer, scene, camera;
 var sphere;
 var ambientLight, pointLight;
+
+var deviceOrientationControls;
+var lastAlpha;
 
 init();
 animate();
@@ -16,6 +20,13 @@ animate();
 function init()
 {
 	console.log("debug: init");
+
+	stats = new Stats();
+	if (showStatsPanel)
+	{
+		stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+		document.body.appendChild(stats.dom);
+	}
 
 	// clock
 	clock = new THREE.Clock();
@@ -66,15 +77,26 @@ function init()
 	pointLight.position.set(10, 15, -10);
 	scene.add(pointLight);
 
+	if (window.orientation != null)
+	{
+		deviceOrientationControls = new THREE.DeviceOrientationControls(camera);
+		deviceOrientationControls.enabled = false;
+	} 
+
 	// listeners
 	window.addEventListener('resize', onWindowResize, false);
 }
 
-function onWindowResize() 
+function onWindowResize()
 {
-	camera.aspect = window.innerWidth / window.innerHeight;
-	camera.updateProjectionMatrix();
-	renderer.setSize(window.innerWidth, window.innerHeight );
+  resetRenderer();
+}
+
+function resetRenderer()
+{
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 function render() 
@@ -85,6 +107,23 @@ function render()
 function animate() 
 {
 	requestAnimationFrame(animate);
+
+	stats.begin();
+	
 	deltaTime = clock.getDelta();
+
+	// handle ios orientation issues
+	if (window.orientation != null)
+	{
+		deviceOrientationControls.update();
+		if (lastAlpha != deviceOrientationControls.deviceOrientation.alpha)
+		{
+			resetRenderer();
+			lastAlpha = deviceOrientationControls.deviceOrientation.alpha;
+		}
+	}
+
+	stats.end();
+
 	render();
 }
